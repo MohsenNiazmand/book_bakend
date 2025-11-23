@@ -7,4 +7,7 @@ urlpatterns = [
     path('api/v1/', include('books.urls')),
 
     path('api/v1/audio/', include('audio.urls')),
+
+    path('api/v1/notes/', include('notes.urls')),
+
 ]
