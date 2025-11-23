@@ -23,14 +23,17 @@ class Chapter(models.Model):
 
 
 class Verse(models.Model):
-
+    book=models.ForeignKey(Book, on_delete=models.CASCADE,related_name="verses")
     chapter = models.ForeignKey(Chapter, on_delete=models.CASCADE, related_name="verses")
     number = models.PositiveIntegerField()  
     text = models.TextField() 
-    translation = models.TextField(blank=True) 
+    translation = models.TextField(blank=True)
+    page_number = models.PositiveIntegerField(null=True, blank=True) 
+ 
 
     class Meta:
         unique_together = ('chapter', 'number') 
 
     def __str__(self):
-        return f"{self.chapter.title} - {self.number}"
+        return f"{self.chapter.title} - {self.number} P: {self.page_number}"
+

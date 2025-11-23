@@ -6,8 +6,8 @@ from .views import UserNoteViewSet, BookmarkViewSet, PlayHistoryViewSet
 router=DefaultRouter()
 router.register(r'notes',UserNoteViewSet, basename='notes')
 router.register(r'bookmarks',BookmarkViewSet,basename='bookmarks')
-router.register(r'history',PlayHistoryViewSet)
+router.register(r'history',PlayHistoryViewSet,basename='playhistory')
 
 urlpatterns = [
-    path=('',include(router.urls)),
+    path('',include(router.urls)),
 ]
