@@ -1,11 +1,15 @@
 from django.db import models
+from core.models import Tenant
 
 class Book(models.Model):
-
+    tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, related_name="books", null=True, blank=True)
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     language = models.CharField(max_length=50, default="ar")  # زبان کتاب
     created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('tenant', 'title')
 
     def __str__(self):
         return self.title

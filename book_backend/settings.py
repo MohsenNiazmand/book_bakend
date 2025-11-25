@@ -62,6 +62,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'core.middleware.TenantMiddleware',  # Tenant middleware - must be after auth
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -91,8 +92,12 @@ WSGI_APPLICATION = 'book_backend.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': env('DB_NAME', default='book_backend'),
+        'USER': env('DB_USER', default='postgres'),
+        'PASSWORD': env('DB_PASSWORD', default='postgres'),
+        'HOST': env('DB_HOST', default='localhost'),
+        'PORT': env('DB_PORT', default='5432'),
     }
 }
 

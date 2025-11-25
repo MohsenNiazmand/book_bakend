@@ -1,5 +1,5 @@
 [project]
-name = "quran-backend"
+name = "book-backend"
 version = "0.1.0"
 description = ""
 authors = [

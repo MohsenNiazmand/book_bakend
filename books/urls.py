@@ -3,8 +3,8 @@ from .views import BookViewSet, ChapterViewSet, VerseViewSet
 
 
 router = DefaultRouter()
-router.register(r'books', BookViewSet)
-router.register(r'chapters', ChapterViewSet)
-router.register(r'verses', VerseViewSet)
+router.register(r'books', BookViewSet, basename='book')
+router.register(r'chapters', ChapterViewSet, basename='chapter')
+router.register(r'verses', VerseViewSet, basename='verse')
 
 urlpatterns = router.urls

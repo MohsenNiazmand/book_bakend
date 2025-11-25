@@ -1,12 +1,17 @@
 from django.db import models
 from books.models import Chapter, Verse
+from core.models import Tenant
 
 
 class Reciter(models.Model):
+    tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, related_name="reciters", null=True, blank=True)
     name = models.CharField(max_length=255)
     language = models.CharField(max_length=50, default="ar")
     bio = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('tenant', 'name')
 
     def __str__(self):
         return self.name
