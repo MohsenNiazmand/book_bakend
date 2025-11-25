@@ -13,9 +13,10 @@ class BookmarkSerializer(serializers.ModelSerializer):
         fields="__all__"
         read_only_fields=['user']
 class PlayHistorySerializer(serializers.ModelSerializer):
-    model=PlayHistory
-    fields = '__all__'
-    read_only_fields = ['user']
+    class Meta:
+        model = PlayHistory
+        fields = '__all__'
+        read_only_fields = ['user']
     
 
 
