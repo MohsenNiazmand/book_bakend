@@ -3,7 +3,8 @@ from django.db import IntegrityError
 from audio.models import Reciter, ChapterAudio, AudioTimestamp
 from audio.tests.factories import (
     ReciterFactory, 
-    ChapterAudioFactory,
+    ChapterAudioFactory, 
+    AudioTimestampFactory
 )
 from books.tests.factories import BookFactory, ChapterFactory, VerseFactory
 from core.tests.factories import TenantFactory
@@ -162,4 +163,113 @@ class TestChapterAudioModel:
         """
         audio = ChapterAudioFactory(file=None, duration_seconds=None)
         assert audio.file is None or audio.external_url is not None
-        assert audio.duration_seconds is None or audio.duration_seconds is not None            
+        assert audio.duration_seconds is None or audio.duration_seconds is not None  
+
+class TestAudioTimestampModel:
+    """
+    Unit tests for AudioTimestamp model.
+    Tests cover model creation, relationships, unique constraints, and validation.
+    """
+    
+    @pytest.mark.django_db
+    def test_create_audio_timestamp(self):
+        """
+        Test successful creation of an AudioTimestamp instance.
+        Verifies that all required fields are properly set and saved to the database.
+        """
+        timestamp = AudioTimestampFactory()
+        assert timestamp.id is not None
+        assert timestamp.chapter_audio is not None
+        assert timestamp.verse is not None
+        assert timestamp.start_time is not None
+    
+    @pytest.mark.django_db
+    def test_audio_timestamp_belongs_to_audio_and_verse(self):
+        """
+        Test that timestamp is correctly associated with chapter_audio and verse.
+        Verifies the ForeignKey relationships.
+        """
+        chapter = ChapterFactory()
+        verse = VerseFactory(chapter=chapter, book=chapter.book)
+        audio = ChapterAudioFactory(chapter=chapter)
+        
+        timestamp = AudioTimestampFactory(chapter_audio=audio, verse=verse)
+        
+        assert timestamp.chapter_audio == audio
+        assert timestamp.verse == verse
+        assert timestamp.verse.chapter == chapter
+    
+    @pytest.mark.django_db
+    def test_audio_timestamp_str(self):
+        """
+        Test the __str__ method of the AudioTimestamp model.
+        Verifies that string representation includes chapter_audio and verse number.
+        """
+        chapter = ChapterFactory()
+        verse = VerseFactory(chapter=chapter, book=chapter.book, number=5)
+        audio = ChapterAudioFactory(chapter=chapter)
+        timestamp = AudioTimestampFactory(chapter_audio=audio, verse=verse)
+        
+        str_repr = str(timestamp)
+        assert "5" in str_repr  # Verse number should be in string
+    
+    @pytest.mark.django_db
+    def test_audio_timestamp_inherits_tenant(self):
+        """
+        Test that timestamp inherits tenant through chapter_audio->chapter->book relationship.
+        Verifies tenant isolation.
+        """
+        tenant = TenantFactory(domain="test")
+        book = BookFactory(tenant=tenant)
+        chapter = ChapterFactory(book=book)
+        verse = VerseFactory(chapter=chapter, book=book)
+        audio = ChapterAudioFactory(chapter=chapter)
+        timestamp = AudioTimestampFactory(chapter_audio=audio, verse=verse)
+        
+        assert timestamp.chapter_audio.chapter.book.tenant == tenant
+        assert timestamp.verse.book.tenant == tenant
+    
+    @pytest.mark.django_db
+    def test_unique_timestamp_per_audio_verse(self):
+        """
+        Test unique constraint: same verse can have different timestamps 
+        for different chapter_audios.
+        """
+        chapter = ChapterFactory()
+        verse = VerseFactory(chapter=chapter, book=chapter.book)
+        audio1 = ChapterAudioFactory(chapter=chapter)
+        audio2 = ChapterAudioFactory(chapter=chapter)
+        
+        timestamp1 = AudioTimestampFactory(chapter_audio=audio1, verse=verse)
+        timestamp2 = AudioTimestampFactory(chapter_audio=audio2, verse=verse)
+        
+        assert timestamp1.verse == timestamp2.verse
+        assert timestamp1.chapter_audio != timestamp2.chapter_audio
+    
+    @pytest.mark.django_db
+    def test_unique_timestamp_same_audio_verse_fails(self):
+        """
+        Test that creating two timestamps with same chapter_audio and verse raises an exception.
+        Verifies the unique_together constraint ('chapter_audio', 'verse').
+        """
+        chapter = ChapterFactory()
+        verse = VerseFactory(chapter=chapter, book=chapter.book)
+        audio = ChapterAudioFactory(chapter=chapter)
+        
+        AudioTimestampFactory(chapter_audio=audio, verse=verse)
+        
+        with pytest.raises(IntegrityError):
+            AudioTimestampFactory(chapter_audio=audio, verse=verse)
+    
+    @pytest.mark.django_db
+    def test_audio_timestamp_end_time_optional(self):
+        """
+        Test that end_time field is optional and can be None.
+        Verifies that timestamps can be created without end_time.
+        """
+        timestamp = AudioTimestampFactory(end_time=None)
+        assert timestamp.end_time is None
+        assert timestamp.start_time is not None
+        
+        timestamp_with_end = AudioTimestampFactory(start_time=0.0, end_time=10.0)
+        assert timestamp_with_end.end_time == 10.0              

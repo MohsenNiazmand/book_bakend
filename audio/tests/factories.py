@@ -1,7 +1,7 @@
 import factory
-from audio.models import Reciter, ChapterAudio
+from audio.models import Reciter, ChapterAudio, AudioTimestamp
 from core.tests.factories import TenantFactory
-from books.tests.factories import ChapterFactory
+from books.tests.factories import ChapterFactory, VerseFactory
 
 class ReciterFactory(factory.django.DjangoModelFactory):
     class Meta:
@@ -24,4 +24,21 @@ class ChapterAudioFactory(factory.django.DjangoModelFactory):
     reciter = factory.SubFactory(ReciterFactory)
     external_url = factory.Sequence(lambda n: f"https://example.com/audio{n}.mp3")
     file = None  # Optional - can be set manually for file upload tests
-    duration_seconds = 300    
+    duration_seconds = 300
+
+class AudioTimestampFactory(factory.django.DjangoModelFactory):
+    """
+    Factory class for creating AudioTimestamp instances in tests.
+    Automatically creates chapter_audio and verse, ensuring they belong to same chapter.
+    """
+    class Meta:
+        model = AudioTimestamp
+    
+    chapter_audio = factory.SubFactory(ChapterAudioFactory)
+    verse = factory.SubFactory(
+        VerseFactory,
+        chapter=factory.SelfAttribute('..chapter_audio.chapter'),
+        book=factory.SelfAttribute('..chapter_audio.chapter.book')
+    )
+    start_time = 0.0
+    end_time = 10.0
