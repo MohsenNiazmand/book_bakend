@@ -1,6 +1,7 @@
 import pytest
 from books.models import Book
-from books.tests.factories import BookFactory, ChapterFactory
+from django.db import IntegrityError
+from books.tests.factories import BookFactory, ChapterFactory, VerseFactory
 from core.tests.factories import TenantFactory
 
 class TestBookModel:
@@ -136,3 +137,112 @@ class TestChapterModel:
         
         chapter_with_juz = ChapterFactory(juz=1)
         assert chapter_with_juz.juz == 1
+
+
+class TestVerseModel:
+    """
+    Unit tests for Verse model.
+    Tests cover model creation, relationships, unique constraints, and tenant isolation.
+    """
+    
+    @pytest.mark.django_db
+    def test_create_verse(self):
+        """
+        Test successful creation of a Verse instance.
+        Verifies that all required fields (id, number, text, book, chapter) 
+        are properly set and saved to the database.
+        """
+        verse = VerseFactory()
+        assert verse.id is not None
+        assert verse.number is not None
+        assert verse.text is not None
+        assert verse.book is not None
+        assert verse.chapter is not None
+    
+    @pytest.mark.django_db
+    def test_verse_belongs_to_book_and_chapter(self):
+        """
+        Test that verse is correctly associated with both book and chapter.
+        Verifies the ForeignKey relationships.
+        """
+        book = BookFactory()
+        chapter = ChapterFactory(book=book)
+        verse = VerseFactory(book=book, chapter=chapter)
+        
+        assert verse.book == book
+        assert verse.chapter == chapter
+        assert verse.chapter.book == book
+    
+    @pytest.mark.django_db
+    def test_verse_str(self):
+        """
+        Test the __str__ method of the Verse model.
+        Verifies that string representation includes chapter title, number, and page.
+        """
+        book = BookFactory(title="Test Book")
+        chapter = ChapterFactory(book=book, title="Test Chapter")
+        verse = VerseFactory(book=book, chapter=chapter, number=5, page_number=10)
+        
+        str_repr = str(verse)
+        assert "Test Chapter" in str_repr
+        assert "5" in str_repr
+        assert "10" in str_repr
+    
+    @pytest.mark.django_db
+    def test_verse_inherits_tenant_from_book(self):
+        """
+        Test that verse inherits tenant through book relationship.
+        Verifies tenant isolation through book.
+        """
+        tenant = TenantFactory(domain="test")
+        book = BookFactory(tenant=tenant)
+        chapter = ChapterFactory(book=book)
+        verse = VerseFactory(book=book, chapter=chapter)
+        
+        assert verse.book.tenant == tenant
+        assert verse.chapter.book.tenant == tenant
+    
+    @pytest.mark.django_db
+    def test_unique_verse_number_per_chapter(self):
+        """
+        Test unique constraint: same verse number can exist in different chapters.
+        Verifies that two verses with the same number can exist 
+        if they belong to different chapters.
+        """
+        book = BookFactory()
+        chapter1 = ChapterFactory(book=book, number=1)
+        chapter2 = ChapterFactory(book=book, number=2)
+        
+        verse1 = VerseFactory(book=book, chapter=chapter1, number=1)
+        verse2 = VerseFactory(book=book, chapter=chapter2, number=1)
+        
+        assert verse1.number == verse2.number
+        assert verse1.chapter != verse2.chapter
+    
+    @pytest.mark.django_db
+    def test_unique_verse_number_same_chapter_fails(self):
+        """
+        Test that creating two verses with the same number in the same chapter raises an exception.
+        Verifies the unique_together constraint ('chapter', 'number').
+        """
+        book = BookFactory()
+        chapter = ChapterFactory(book=book)
+        
+        VerseFactory(book=book, chapter=chapter, number=1)
+        
+        with pytest.raises(IntegrityError):
+            VerseFactory(book=book, chapter=chapter, number=1)
+    
+    @pytest.mark.django_db
+    def test_verse_optional_fields(self):
+        """
+        Test that optional fields (translation, page_number) can be None.
+        Verifies that verses can be created without these fields.
+        """
+        verse = VerseFactory(translation="", page_number=None)
+        assert verse.translation == ""
+        assert verse.page_number is None
+        
+        verse_with_fields = VerseFactory(translation="Translation", page_number=10)
+        assert verse_with_fields.translation == "Translation"
+        assert verse_with_fields.page_number == 10

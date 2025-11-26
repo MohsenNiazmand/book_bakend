@@ -1,5 +1,5 @@
 import factory
-from books.models import Book, Chapter
+from books.models import Book, Chapter, Verse
 from core.tests.factories import TenantFactory
 
 class BookFactory(factory.django.DjangoModelFactory):
@@ -29,3 +29,19 @@ class ChapterFactory(factory.django.DjangoModelFactory):
     title = factory.Sequence(lambda n: f"Chapter {n}")
     number = factory.Sequence(lambda n: n)
     juz = None  # Optional field   
+
+
+class VerseFactory(factory.django.DjangoModelFactory):
+    """
+    Factory class for creating Verse instances in tests.
+    Generates unique numbers using sequences and automatically creates book and chapter.
+    """
+    class Meta:
+        model = Verse
+    
+    book = factory.SubFactory(BookFactory)
+    chapter = factory.SubFactory(ChapterFactory, book=factory.SelfAttribute('..book'))
+    number = factory.Sequence(lambda n: n)
+    text = factory.Sequence(lambda n: f"Verse text {n}")
+    translation = ""
+    page_number = None
