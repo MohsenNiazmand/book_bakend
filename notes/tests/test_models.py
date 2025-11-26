@@ -92,3 +92,90 @@ class TestUserNoteModel:
         assert note.chapter is None
         assert note.verse is None
         assert note.page_number is None
+
+
+
+class TestBookmarkModel:
+    """
+    Unit tests for Bookmark model.
+    Tests cover model creation, relationships, unique constraints, and tenant isolation.
+    """
+    
+    @pytest.mark.django_db
+    def test_create_bookmark(self):
+        """
+        Test successful creation of a Bookmark instance.
+        Verifies that all required fields are properly set and saved to the database.
+        """
+        bookmark = BookmarkFactory()
+        assert bookmark.id is not None
+        assert bookmark.user is not None
+        assert bookmark.book is not None
+    
+    @pytest.mark.django_db
+    def test_bookmark_belongs_to_user_and_book(self):
+        """
+        Test that bookmark is correctly associated with user and book.
+        Verifies the ForeignKey relationships.
+        """
+        user = UserFactory()
+        book = BookFactory()
+        bookmark = BookmarkFactory(user=user, book=book)
+        
+        assert bookmark.user == user
+        assert bookmark.book == book
+    
+    @pytest.mark.django_db
+    def test_bookmark_with_verse(self):
+        """
+        Test creating bookmark with verse reference.
+        Verifies that bookmark can be associated with a specific verse.
+        """
+        book = BookFactory()
+        chapter = ChapterFactory(book=book)
+        verse = VerseFactory(book=book, chapter=chapter)
+        bookmark = BookmarkFactory(book=book, verse=verse)
+        
+        assert bookmark.verse == verse
+    
+    @pytest.mark.django_db
+    def test_bookmark_inherits_tenant_from_book(self):
+        """
+        Test that bookmark inherits tenant through book relationship.
+        Verifies tenant isolation through book.
+        """
+        tenant = TenantFactory(domain="test")
+        book = BookFactory(tenant=tenant)
+        user = UserFactory(tenant=tenant)
+        bookmark = BookmarkFactory(user=user, book=book)
+        
+        assert bookmark.book.tenant == tenant
+        assert bookmark.user.tenant == tenant
+    
+    @pytest.mark.django_db
+    def test_unique_bookmark_per_user_book_chapter_verse(self):
+        """
+        Test unique constraint: same user can bookmark same book+chapter+verse only once.
+        Verifies the unique_together constraint ('user', 'book', 'chapter', 'verse').
+        """
+        user = UserFactory()
+        book = BookFactory()
+        chapter = ChapterFactory(book=book)
+        verse = VerseFactory(book=book, chapter=chapter)
+        
+        bookmark1 = BookmarkFactory(user=user, book=book, chapter=chapter, verse=verse)
+        
+        # Creating another bookmark with same combination should fail
+        with pytest.raises(IntegrityError):
+            BookmarkFactory(user=user, book=book, chapter=chapter, verse=verse)
+    
+    @pytest.mark.django_db
+    def test_bookmark_optional_fields(self):
+        """
+        Test that optional fields (chapter, verse, page_number) can be None.
+        Verifies that bookmarks can be created at book level.
+        """
+        bookmark = BookmarkFactory(chapter=None, verse=None, page_number=None)
+        assert bookmark.chapter is None
+        assert bookmark.verse is None
+        assert bookmark.page_number is None        
