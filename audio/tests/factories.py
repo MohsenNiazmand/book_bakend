@@ -1,7 +1,7 @@
 import factory
 from audio.models import Reciter, ChapterAudio, AudioTimestamp
 from core.tests.factories import TenantFactory
-from books.tests.factories import ChapterFactory, VerseFactory
+from books.tests.factories import ChapterFactory, VerseFactory, BookFactory
 
 class ReciterFactory(factory.django.DjangoModelFactory):
     class Meta:
