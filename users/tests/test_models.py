@@ -1,7 +1,7 @@
 import pytest
 from django.contrib.auth import get_user_model
 from django.db import IntegrityError
-from factories import UserFactory
+from users.tests.factories import UserFactory
 from core.tests.factories import TenantFactory
 
 User = get_user_model()
